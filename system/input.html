@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>录入数据 | 个人数字化日记系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-start: #f9f5f0;
+            --bg-end: #f0eae4;
+            --card-bg: rgba(255,255,255,0.94);
+            --accent: #e8b4b8;
+            --accent-hover: #dba1a6;
+            --text-dark: #5c4b3a;
+            --text-light: #8b8b8b;
+            --shadow-sm: 0 4px 12px rgba(0,0,0,0.04);
+            --shadow-md: 0 8px 24px rgba(0,0,0,0.06);
+            --radius: 28px;
+        }
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
+            min-height: 100vh;
+            padding: 24px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        /* 导航栏 */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(12px);
+            padding: 10px 28px;
+            border-radius: 60px;
+            margin-bottom: 28px;
+            box-shadow: var(--shadow-sm);
+        }
+        .logo { font-size: 1.1rem; font-weight: 500; color: var(--text-dark); }
+        .logo i { color: var(--accent); margin-right: 8px; }
+        .nav-links { display: flex; gap: 12px; }
+        .nav-btn {
+            padding: 8px 24px;
+            border-radius: 40px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nav-btn.active {
+            background: var(--accent);
+            color: white;
+        }
+        .nav-btn:not(.active) {
+            background: transparent;
+            color: var(--text-dark);
+        }
+        .nav-btn:not(.active):hover {
+            background: rgba(232, 180, 184, 0.2);
+        }
+
+        /* 双栏布局 */
+        .split-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 28px;
+        }
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.2s;
+        }
+        .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .card h2 {
+            font-size: 1.1rem;
+            color: var(--text-dark);
+            margin-bottom: 20px;
+            border-left: 4px solid var(--accent);
+            padding-left: 14px;
+        }
+        .form-group { margin-bottom: 16px; }
+        label { font-size: 0.7rem; color: var(--text-light); display: block; margin-bottom: 6px; letter-spacing: 0.5px; }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #e8dfd7;
+            border-radius: 24px;
+            font-size: 0.85rem;
+            background: white;
+            transition: all 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(232,180,184,0.2);
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover { background: var(--accent-hover); transform: translateY(-2px); }
+        .preview-table { max-height: 300px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+        th, td { padding: 8px 6px; text-align: left; border-bottom: 1px solid #efe5dd; }
+        .delete-btn { background: none; border: none; color: #d4a5a0; cursor: pointer; font-size: 1rem; }
+        .delete-btn:hover { color: #e0796e; }
+        .mini-chart { margin-top: 28px; background: var(--card-bg); border-radius: 24px; padding: 16px; }
+        .mini-chart h4 { font-size: 0.8rem; margin-bottom: 12px; color: var(--text-dark); }
+        .mini-chart-container { height: 200px; }
+        .toast {
+            position: fixed; bottom: 30px; right: 30px;
+            background: #4a7c5c; color: white; padding: 10px 20px;
+            border-radius: 40px; font-size: 0.8rem;
+            opacity: 0; transition: opacity 0.3s; pointer-events: none;
+            z-index: 1000;
+        }
+        .toast.show { opacity: 1; }
+        @media (max-width: 900px) { .split-layout { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 导航栏 -->
+    <div class="navbar">
+        <div class="logo"><i class="fas fa-pen-fancy"></i> 日记数据录入</div>
+        <div class="nav-links">
+            <a href="dashboard.html" class="nav-btn"><i class="fas fa-chart-line"></i> 数据看板</a>
+            <a href="input.html" class="nav-btn active"><i class="fas fa-edit"></i> 录入数据</a>
+        </div>
+    </div>
+
+    <!-- 双栏布局：左侧表单 + 右侧预览 -->
+    <div class="split-layout">
+        <div class="card">
+            <h2><i class="fas fa-plus-circle"></i> 添加新日记</h2>
+            <form id="dataForm">
+                <div class="form-group"><label>📅 日期</label><input type="date" id="date" required value="2025-05-26"></div>
+                <div class="form-group"><label>😊 心情 (1-5)</label><input type="number" id="mood" min="1" max="5" required value="4"></div>
+                <div class="form-group"><label>💰 支出 (元)</label><input type="number" id="expense" step="0.01" value="45.5"></div>
+                <div class="form-group"><label>📖 阅读时长 (分钟)</label><input type="number" id="reading" value="35"></div>
+                <div class="form-group"><label>🏃 运动时长 (分钟)</label><input type="number" id="exercise" value="25"></div>
+                <div class="form-group"><label>💡 灵感内容</label><textarea id="inspire" rows="2" placeholder="记录今天的灵感..."></textarea></div>
+                <button type="submit" class="btn-primary"><i class="fas fa-save"></i> 保存记录</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2><i class="fas fa-database"></i> 最近记录</h2>
+            <div class="preview-table">
+                <table id="dataTable">
+                    <thead><tr><th>日期</th><th>心情</th><th>支出</th><th>阅读</th><th>运动</th><th></th></tr></thead>
+                    <tbody id="tableBody"><tr><td colspan="6" style="text-align:center">暂无数据</td></tr></tbody>
+                </table>
+            </div>
+            <button id="clearAllBtn" class="btn-primary" style="background:#d9c7be; margin-top:16px;"><i class="fas fa-trash-alt"></i> 清空所有数据</button>
+        </div>
+    </div>
+
+    <!-- 实时图表预览 -->
+    <div class="mini-chart">
+        <h4><i class="fas fa-chart-line"></i> 心情趋势预览</h4>
+        <div id="previewMoodChart" class="mini-chart-container"></div>
+    </div>
+</div>
+<div id="toast" class="toast">已保存</div>
+
+<script>
+    let diaryData = [];
+
+    function loadData() {
+        const stored = localStorage.getItem('diaryData');
+        if (stored) {
+            diaryData = JSON.parse(stored);
+        } else {
+            diaryData = [
+                { date: '2025-05-20', mood: 4, expense: 32.5, reading: 45, exercise: 30, inspire: '运动后心情很棒' },
+                { date: '2025-05-21', mood: 3, expense: 128, reading: 20, exercise: 15, inspire: '工作有点累' },
+                { date: '2025-05-22', mood: 5, expense: 0, reading: 60, exercise: 50, inspire: '阅读收获满满' },
+            ];
+            saveData();
+        }
+        renderTable(); renderChart();
+    }
+    function saveData() { localStorage.setItem('diaryData', JSON.stringify(diaryData)); }
+    function addData(e) {
+        e.preventDefault();
+        const newRecord = {
+            date: document.getElementById('date').value,
+            mood: parseInt(document.getElementById('mood').value),
+            expense: parseFloat(document.getElementById('expense').value) || 0,
+            reading: parseInt(document.getElementById('reading').value) || 0,
+            exercise: parseInt(document.getElementById('exercise').value) || 0,
+            inspire: document.getElementById('inspire').value || ''
+        };
+        diaryData.unshift(newRecord);
+        saveData(); renderTable(); renderChart();
+        showToast('已保存');
+        document.getElementById('dataForm').reset();
+        document.getElementById('date').value = new Date().toISOString().slice(0,10);
+    }
+    function deleteRecord(idx) { diaryData.splice(idx,1); saveData(); renderTable(); renderChart(); showToast('🗑️ 已删除'); }
+    function clearAll() { if(confirm('确定清空所有数据吗？')) { diaryData = []; saveData(); renderTable(); renderChart(); showToast('已清空'); } }
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        if(diaryData.length===0) { tbody.innerHTML='<tr><td colspan="6" style="text-align:center">暂无数据</td></tr>'; return; }
+        tbody.innerHTML = diaryData.slice(0,15).map((d,i)=>`
+            <tr><td>${d.date}</td><td>${d.mood}/5</td><td>¥${d.expense.toFixed(2)}</td><td>${d.reading}min</td><td>${d.exercise}min</td><td><button class="delete-btn" onclick="deleteRecord(${i})"><i class="fas fa-times-circle"></i></button></td></tr>
+        `).join('');
+    }
+    let moodChart;
+    function renderChart() {
+        if(diaryData.length===0) return;
+        const sorted = [...diaryData].sort((a,b)=>new Date(a.date)-new Date(b.date));
+        const dates = sorted.map(d=>d.date.slice(5));
+        const moods = sorted.map(d=>d.mood);
+        if(!moodChart) moodChart = echarts.init(document.getElementById('previewMoodChart'));
+        moodChart.setOption({
+            tooltip: { trigger: 'axis' },
+            xAxis: { type: 'category', data: dates, axisLabel: { rotate: 30, fontSize: 9 } },
+            yAxis: { type: 'value', min: 1, max: 5, name: '心情' },
+            series: [{ type: 'line', data: moods, smooth: true, lineStyle: { color: '#e8b4b8', width: 2 }, areaStyle: { color: 'rgba(232,180,184,0.1)' }, symbol: 'circle', symbolSize: 6 }]
+        });
+    }
+    function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+    document.getElementById('dataForm').addEventListener('submit', addData);
+    document.getElementById('clearAllBtn').addEventListener('click', clearAll);
+    loadData();
+    window.addEventListener('resize', ()=>{ if(moodChart) moodChart.resize(); });
+</script>
+</body>
+</html>

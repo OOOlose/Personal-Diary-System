@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>个人数字化日记系统 | 数据看板</title>
+
+    <!-- ECharts CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        /* ========== 全局变量 ========== */
+        :root {
+            --bg-gradient-start: #f9f5f0;
+            --bg-gradient-end: #f0eae4;
+            --card-bg: rgba(255, 255, 255, 0.92);
+            --text-primary: #4a4a4a;
+            --text-secondary: #8b8b8b;
+            --accent-primary: #e8b4b8;
+            --accent-soft: #f3d9dc;
+            --accent-green: #a8c3a5;
+            --accent-blue: #b8d4e3;
+            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.08);
+            --border-radius-card: 28px;
+            --border-radius-chart: 20px;
+            --transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            padding: 24px 20px 40px;
+            color: var(--text-primary);
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #e8e0d8; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: var(--accent-primary); border-radius: 10px; }
+
+        /* ========== 容器 ========== */
+        .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        }
+
+        /* ========== 头部 ========== */
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+            animation: fadeInDown 0.6s ease;
+        }
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 500;
+            color: #5c4b3a;
+            letter-spacing: -0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255,255,255,0.5);
+            backdrop-filter: blur(8px);
+            padding: 12px 28px;
+            border-radius: 60px;
+            box-shadow: var(--shadow-sm);
+        }
+        .header h1 i {
+            color: var(--accent-primary);
+            font-size: 1.8rem;
+        }
+        .subtitle {
+            color: var(--text-secondary);
+            margin-top: 12px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .subtitle span {
+            background: rgba(255,255,255,0.6);
+            padding: 4px 14px;
+            border-radius: 30px;
+            backdrop-filter: blur(4px);
+        }
+
+        /* ========== 统计卡片区 ========== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 18px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border-radius: var(--border-radius-card);
+            padding: 20px 16px;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            border: 1px solid rgba(255,255,255,0.6);
+            cursor: pointer;
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+            background: rgba(255, 255, 255, 0.98);
+        }
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        .stat-card h4 {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #5c4b3a;
+            line-height: 1.2;
+        }
+        .stat-unit {
+            font-size: 0.8rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin-left: 2px;
+        }
+        .stat-trend {
+            font-size: 0.7rem;
+            margin-top: 8px;
+            color: var(--accent-green);
+        }
+
+        /* ========== 图表网格 ========== */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+        .chart-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border-radius: var(--border-radius-card);
+            padding: 20px 18px 18px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        .chart-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .chart-header h3 {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #5c4b3a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .chart-header h3 i {
+            color: var(--accent-primary);
+            font-size: 1.2rem;
+        }
+        .chart-tag {
+            background: var(--accent-soft);
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            color: #8b6b5a;
+        }
+        .chart-container {
+            height: 320px;
+            width: 100%;
+        }
+
+        /* ========== 功能按钮区（可扩展接口） ========== */
+        .action-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .action-btn {
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(8px);
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #5c4b3a;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--shadow-sm);
+        }
+        .action-btn:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            color: var(--accent-primary);
+        }
+
+        /* ========== 底部 ========== */
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px 16px;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            background: rgba(255,255,255,0.3);
+            border-radius: 20px;
+            width: 100%;
+            clear: both;
+        }
+
+        .footer p {
+            text-align: center;
+            margin: 0 auto;
+        }
+
+        /* ========== 动画 ========== */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chart-card {
+            animation: fadeInUp 0.5s ease backwards;
+        }
+        .chart-card:nth-child(1) { animation-delay: 0.05s; }
+        .chart-card:nth-child(2) { animation-delay: 0.1s; }
+        .chart-card:nth-child(3) { animation-delay: 0.15s; }
+        .chart-card:nth-child(4) { animation-delay: 0.2s; }
+
+        /* 移动端适配 */
+        @media (max-width: 900px) {
+            .charts-grid { grid-template-columns: 1fr; }
+            body { padding: 16px; }
+            .stat-number { font-size: 1.5rem; }
+        }
+
+        /* 加载动画 */
+        .loading-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+<div class="c而她若ontainer">
+    <!-- 头部 -->
+    <div class="header">
+        <h1>
+            <i class="fas fa-journal-whills"></i>
+            个人数字化日记系统
+        </h1>
+        <div class="subtitle">
+            <span><i class="fas fa-cloud-sun"></i> 个性看板</span>
+            <span><i class="fas fa-chart-line"></i> 生活数据可视化</span>
+            <span><i class="fas fa-heart"></i> 记录即力量</span>
+        </div>
+    </div>
+
+    <!-- 导航栏 -->
+<div class="navbar" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.5); backdrop-filter: blur(8px); padding: 10px 28px; border-radius: 60px; margin-bottom: 24px; box-shadow: var(--shadow-sm);">
+    <div class="logo" style="font-weight: 500; color: #5c4b3a; font-size: 1.1rem;">
+        <i class="fas fa-journal-whills"></i> 个人数字化日记
+    </div>
+    <div style="display: flex; gap: 12px;">
+        <a href="dashboard.html" class="nav-btn active" style="background: #e8b4b8; color: white; padding: 8px 24px; border-radius: 40px; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px;"><i class="fas fa-chart-line"></i> 数据看板</a>
+        <a href="input.html" class="nav-btn" style="background: transparent; color: #5c4b3a; padding: 8px 24px; border-radius: 40px; text-decoration: none; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;" onmouseover="this.style.backgroundColor='rgba(232,180,184,0.2)'" onmouseout="this.style.backgroundColor='transparent'"><i class="fas fa-edit"></i> 录入数据</a>
+    </div>
+</div>
+
+    <!-- 快捷操作栏（可扩展接口预留） -->
+    <div class="action-bar">
+        <button class="action-btn" id="exportBtn"><i class="fas fa-download"></i> 导出报表</button>
+        <button class="action-btn" id="refreshBtn"><i class="fas fa-sync-alt"></i> 刷新数据</button>
+        <button class="action-btn" id="expandBtn"><i class="fas fa-expand-alt"></i> 预留扩展</button>
+    </div>
+
+    <!-- 统计卡片区（易读性优先） -->
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <!-- 图表区 -->
+    <div class="charts-grid">
+        <!-- 饼图：支出占比 -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-coins"></i> 支出分布</h3>
+                <div class="chart-tag"><i class="fas fa-chart-pie"></i> 占比分析</div>
+            </div>
+            <div id="expenseChart" class="chart-container"></div>
+        </div>
+
+        <!-- 折线图：心情趋势 -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-smile"></i> 心情趋势</h3>
+                <div class="chart-tag"><i class="fas fa-chart-line"></i> 月度变化</div>
+            </div>
+            <div id="moodChart" class="chart-container"></div>
+        </div>
+
+        <!-- 柱状图：阅读/运动 -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-person-walking"></i> 阅读 & 运动</h3>
+                <div class="chart-tag"><i class="fas fa-chart-simple"></i> 月度对比</div>
+            </div>
+            <div id="activityChart" class="chart-container"></div>
+        </div>
+
+        <!-- 折线图：灵感内容趋势 -->
+    <div class="chart-card">
+      <div class="chart-header">
+            <h3><i class="fas fa-lightbulb"></i> 灵感内容趋势</h3>
+            <div class="chart-tag"><i class="fas fa-chart-line"></i> 每日灵感数量</div>
+        </div>
+      <div id="inspirationChart" class="chart-container"></div>
+    </div>
+
+    <!-- 灵感内容列表 -->
+<div class="chart-card" style="grid-column: span 2; margin-top: 24px;">
+    <div class="chart-header">
+        <h3><i class="fas fa-lightbulb"></i> 最近灵感记录</h3>
+        <div class="chart-tag"><i class="fas fa-list"></i> 记录生活中的灵感火花</div>
+    </div>
+    <div id="inspirationList" style="max-height: 400px; overflow-y: auto; padding: 8px;">
+        <div style="text-align: center; color: #8b8b8b; padding: 40px;">
+            <i class="fas fa-spinner fa-pulse"></i> 加载中...
+        </div>
+    </div>
+</div>
+</div>
+
+    <div class="footer">
+        <p><i class="fas fa-database"></i> 数据源于 Hive 数据仓库 温柔风</p>
+        <p style="margin-top: 6px;">✨ 个人数字化日记系统 ✨</p>
+    </div>
+</div>
+
+<script>
+
+        // ===================== 从后端 API 加载数据 =====================
+    const API_BASE = 'http://localhost:5000/api';
+
+    async function loadDataFromBackend() {
+        try {
+            // 并行请求所有数据
+            const [expenseRes, moodRes, activityRes, inspirationRes, summaryRes] = await Promise.all([
+                fetch(`${API_BASE}/hive/expense`),
+                fetch(`${API_BASE}/hive/mood`),
+                fetch(`${API_BASE}/hive/activity`),
+                fetch(`${API_BASE}/hive/inspiration`),
+                fetch(`${API_BASE}/hive/summary`)
+            ]);
+
+            if (expenseRes.ok && moodRes.ok) {
+                expenseData = await expenseRes.json();
+                moodData = await moodRes.json();
+                activityData = await activityRes.json();
+                inspirationData = await inspirationRes.json();
+                summary = await summaryRes.json();
+
+                console.log(' 后端数据加载成功');
+                return true;
+            } else {
+                throw new Error('API请求失败');
+            }
+        } catch (error) {
+            console.log(' 后端连接失败，使用本地数据:', error.message);
+            return false;
+        }
+    }
+
+    // 修改启动代码
+    async function init() {
+        const backendOk = await loadDataFromBackend();
+        if (!backendOk) {
+            // 降级使用 localStorage 或模拟数据
+            console.log('使用本地数据模式');
+        }
+        renderStats();
+        renderAllCharts();
+        renderInspirationList();
+    }
+
+    // 调用初始化
+    init();
+
+       // ===================== 数据定义（优先读取 localStorage）=====================
+
+    // 从 localStorage 读取用户录入的数据
+    let userDiaryData = [];
+    try {
+        const stored = localStorage.getItem('diaryData');
+        if (stored) {
+            userDiaryData = JSON.parse(stored);
+            console.log(` 已加载用户录入数据，共 ${userDiaryData.length} 条`);
+        } else {
+            console.log(' 暂无用户录入数据，使用模拟数据');
+        }
+    } catch(e) { console.log('读取本地数据失败'); }
+
+    // 如果用户有录入数据，使用真实数据；否则使用模拟数据
+    const hasUserData = userDiaryData.length > 0;
+
+    // 支出分布（优先使用用户数据计算）
+    let expenseData = [];
+    let moodData = [];
+    let activityData = [];
+    let inspirationData = [];
+    let summary = {};
+
+    if (hasUserData) {
+        // ========== 基于用户录入数据计算统计 ==========
+
+        // 1. 支出分布统计
+        const expenseRanges = { '0-50元': 0, '50-100元': 0, '100-200元': 0, '200-500元': 0, '500元以上': 0 };
+        let totalExpense = 0;
+        let totalReading = 0;
+        let totalExercise = 0;
+        let moodSum = 0;
+
+        userDiaryData.forEach(d => {
+            const expense = d.expense || 0;
+            totalExpense += expense;
+            totalReading += d.reading || 0;
+            totalExercise += d.exercise || 0;
+            moodSum += d.mood || 3;
+
+            if (expense <= 50) expenseRanges['0-50元']++;
+            else if (expense <= 100) expenseRanges['50-100元']++;
+            else if (expense <= 200) expenseRanges['100-200元']++;
+            else if (expense <= 500) expenseRanges['200-500元']++;
+            else expenseRanges['500元以上']++;
+        });
+
+        expenseData = Object.entries(expenseRanges).map(([name, value]) => ({
+            name, value, color: name === '0-50元' ? '#e8b4b8' : name === '50-100元' ? '#f3d9dc' : name === '100-200元' ? '#c7d9c5' : name === '200-500元' ? '#b8d4e3' : '#f0cdb2'
+        }));
+
+        // 2. 心情趋势（按月份）
+        const monthMood = {};
+        userDiaryData.forEach(d => {
+            const month = d.date.substring(5, 7) + '月';
+            if (!monthMood[month]) { monthMood[month] = { sum: 0, count: 0 }; }
+            monthMood[month].sum += d.mood;
+            monthMood[month].count++;
+        });
+        const sortedMonths = ['01月','02月','03月','04月','05月','06月','07月','08月','09月','10月','11月','12月'];
+        moodData = sortedMonths.filter(m => monthMood[m]).map(m => ({ date: m, mood: monthMood[m].sum / monthMood[m].count }));
+        if (moodData.length === 0) moodData = [{ date: '1月', mood: 3.5 }];
+
+        // 3. 阅读运动（按月份）
+        const monthActivity = {};
+        userDiaryData.forEach(d => {
+            const month = d.date.substring(5, 7) + '月';
+            if (!monthActivity[month]) { monthActivity[month] = { reading: 0, exercise: 0, count: 0 }; }
+            monthActivity[month].reading += d.reading || 0;
+            monthActivity[month].exercise += d.exercise || 0;
+            monthActivity[month].count++;
+        });
+        activityData = sortedMonths.filter(m => monthActivity[m]).map(m => ({
+            month: m,
+            reading: monthActivity[m].reading / monthActivity[m].count,
+            exercise: monthActivity[m].exercise / monthActivity[m].count
+        }));
+        if (activityData.length === 0) activityData = [{ month: '1月', reading: 30, exercise: 25 }];
+
+        // 4. 灵感时段（24小时分布，随机模拟）
+        inspirationData = Array.from({length:24}, (_,i) => ({ hour: i, count: 5000 + i * 500 + Math.random() * 1000 }));
+
+        // 5. 统计摘要
+        const recordCount = userDiaryData.length;
+        summary = {
+            totalRecords: recordCount,
+            avgMood: (moodSum / recordCount).toFixed(2),
+            totalExpense: totalExpense.toFixed(2),
+            avgExpense: (totalExpense / recordCount).toFixed(2),
+            avgReading: (totalReading / recordCount).toFixed(1),
+            avgExercise: (totalExercise / recordCount).toFixed(1),
+            totalIdeas: recordCount * 1.2
+        };
+
+        console.log('已使用用户录入数据渲染图表');
+
+    } else {
+        // ========== 使用默认模拟数据 ==========
+        expenseData = [
+            { name: '0-50元', value: 125000, color: '#e8b4b8' },
+            { name: '50-100元', value: 98000, color: '#f3d9dc' },
+            { name: '100-200元', value: 75000, color: '#c7d9c5' },
+            { name: '200-500元', value: 42000, color: '#b8d4e3' },
+            { name: '500元以上', value: 18000, color: '#f0cdb2' }
+        ];
+
+        moodData = [
+            { date: '1月', mood: 3.2 }, { date: '2月', mood: 3.4 }, { date: '3月', mood: 3.5 },
+            { date: '4月', mood: 3.3 }, { date: '5月', mood: 3.6 }, { date: '6月', mood: 3.8 },
+            { date: '7月', mood: 3.9 }, { date: '8月', mood: 3.7 }, { date: '9月', mood: 3.5 },
+            { date: '10月', mood: 3.4 }, { date: '11月', mood: 3.3 }, { date: '12月', mood: 3.5 }
+        ];
+
+        activityData = [
+            { month: '1月', reading: 45.5, exercise: 48.2 }, { month: '2月', reading: 52.3, exercise: 51.5 },
+            { month: '3月', reading: 48.7, exercise: 49.8 }, { month: '4月', reading: 55.2, exercise: 52.3 },
+            { month: '5月', reading: 58.6, exercise: 55.7 }, { month: '6月', reading: 62.1, exercise: 58.4 },
+            { month: '7月', reading: 59.8, exercise: 56.2 }, { month: '8月', reading: 54.3, exercise: 52.8 },
+            { month: '9月', reading: 51.2, exercise: 49.5 }, { month: '10月', reading: 53.6, exercise: 51.2 },
+            { month: '11月', reading: 49.5, exercise: 47.8 }, { month: '12月', reading: 47.2, exercise: 45.6 }
+        ];
+
+        inspirationData = [
+            { hour: 0, count: 5200 }, { hour: 1, count: 3100 }, { hour: 2, count: 2100 },
+            { hour: 3, count: 1800 }, { hour: 4, count: 1900 }, { hour: 5, count: 3200 },
+            { hour: 6, count: 8500 }, { hour: 7, count: 15800 }, { hour: 8, count: 25600 },
+            { hour: 9, count: 35800 }, { hour: 10, count: 42500 }, { hour: 11, count: 46800 },
+            { hour: 12, count: 48500 }, { hour: 13, count: 49200 }, { hour: 14, count: 51200 },
+            { hour: 15, count: 53500 }, { hour: 16, count: 55800 }, { hour: 17, count: 61200 },
+            { hour: 18, count: 68500 }, { hour: 19, count: 72500 }, { hour: 20, count: 69800 },
+            { hour: 21, count: 56200 }, { hour: 22, count: 38500 }, { hour: 23, count: 18500 }
+        ];
+
+        summary = {
+            totalRecords: 1000000,
+            avgMood: 3.52,
+            totalExpense: 52384520,
+            avgExpense: 52.38,
+            avgReading: 52.5,
+            avgExercise: 48.3,
+            totalIdeas: 1245600
+        };
+    }
+        // ===================== 渲染统计卡片 =====================
+        function renderStats() {
+        const statsGrid = document.getElementById('statsGrid');
+        statsGrid.innerHTML = `
+            <div class="stat-card"><div class="stat-icon">📔</div><h4>总记录数</h4><div class="stat-number">${summary.totalRecords.toLocaleString()}<span class="stat-unit">条</span></div><div class="stat-trend">${hasUserData ? '📝 实时数据' : '+12% 较上月'}</div></div>
+            <div class="stat-card"><div class="stat-icon">😊</div><h4>平均心情</h4><div class="stat-number">${summary.avgMood}<span class="stat-unit">/5</span></div><div class="stat-trend">${hasUserData ? '录入心情' : '平稳向上'}</div></div>
+            <div class="stat-card"><div class="stat-icon">💰</div><h4>总支出</h4><div class="stat-number">¥${hasUserData ? (summary.totalExpense / 10000).toFixed(2) : (summary.totalExpense / 10000).toFixed(0)}<span class="stat-unit">万</span></div><div class="stat-trend">${hasUserData ? '真实消费' : '理性消费'}</div></div>
+            <div class="stat-card"><div class="stat-icon">📖</div><h4>平均阅读</h4><div class="stat-number">${summary.avgReading}<span class="stat-unit">分钟</span></div><div class="stat-trend">${hasUserData ? '录入数据' : '每天'}</div></div>
+            <div class="stat-card"><div class="stat-icon">🏃</div><h4>平均运动</h4><div class="stat-number">${summary.avgExercise}<span class="stat-unit">分钟</span></div><div class="stat-trend">${hasUserData ? '录入数据' : '活力满满'}</div></div>
+            <div class="stat-card"><div class="stat-icon">💡</div><h4>灵感碎片</h4><div class="stat-number">${hasUserData ? (summary.totalIdeas / 10000).toFixed(1) : (summary.totalIdeas / 10000).toFixed(0)}<span class="stat-unit">万</span></div><div class="stat-trend">${hasUserData ? '记录灵感' : '思维火花'}</div></div>
+        `;
+    }
+
+    // 渲染灵感内容列表
+    function renderInspirationList() {
+        const container = document.getElementById('inspirationList');
+        if (!container) return;
+
+        if (hasUserData && userDiaryData.length > 0) {
+            // 过滤出有灵感内容的记录
+            const inspirations = userDiaryData
+                .filter(d => d.inspire && d.inspire.trim().length > 0)
+                .slice(0, 20); // 最近20条
+
+            if (inspirations.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #8b8b8b; padding: 50px;"><i class="fas fa-feather-alt"></i> ✨ 暂无灵感记录，在「录入数据」页面添加吧</div>';
+                return;
+            }
+
+            container.innerHTML = inspirations.map((d, idx) => `
+                <div style="background: linear-gradient(135deg, rgba(232,180,184,0.08) 0%, rgba(232,180,184,0.03) 100%); border-radius: 20px; padding: 16px 20px; margin-bottom: 12px; border-left: 4px solid #e8b4b8; transition: all 0.2s;" onmouseover="this.style.backgroundColor='rgba(232,180,184,0.15)'" onmouseout="this.style.backgroundColor=''">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-size: 0.75rem; color: #e8b4b8;"><i class="far fa-calendar-alt"></i> ${d.date}</span>
+                        <span style="font-size: 0.7rem; background: rgba(232,180,184,0.2); padding: 4px 12px; border-radius: 30px; color: #8b6b5a;">😊 心情: ${d.mood}/5</span>
+                    </div>
+                    <div style="font-size: 0.9rem; color: #5c4b3a; line-height: 1.5; word-break: break-word;"> ${escapeHtml(d.inspire)}</div>
+                    ${d.reading || d.exercise ? `<div style="margin-top: 10px; font-size: 0.65rem; color: #a8c3a5;"><i class="fas fa-book-open"></i> 阅读 ${d.reading || 0}min &nbsp;&nbsp; <i class="fas fa-running"></i> 运动 ${d.exercise || 0}min</div>` : ''}
+                </div>
+            `).join('');
+        } else {
+            // 模拟灵感数据
+            const mockInspirations = [
+                { date: '2025-05-25', mood: 4, inspire: '今天学会了用ECharts做可视化，成就感满满！', reading: 45, exercise: 30 },
+                { date: '2025-05-24', mood: 5, inspire: '晨跑时想到一个很好的项目创意，赶紧记下来。', reading: 20, exercise: 50 },
+                { date: '2025-05-23', mood: 3, inspire: '阅读《原子习惯》，习惯的复利效应真的很惊人。', reading: 60, exercise: 20 },
+                { date: '2025-05-22', mood: 4, inspire: '尝试做了新菜谱，意外的成功！', reading: 30, exercise: 25 },
+                { date: '2025-05-21', mood: 4, inspire: '整理了近一个月的日记数据，发现心情和运动高度相关。', reading: 40, exercise: 35 },
+                { date: '2025-05-20', mood: 5, inspire: '完成了项目的第一版可视化看板，很有成就感！', reading: 55, exercise: 45 },
+            ];
+            container.innerHTML = mockInspirations.map(d => `
+                <div style="background: linear-gradient(135deg, rgba(232,180,184,0.08) 0%, rgba(232,180,184,0.03) 100%); border-radius: 20px; padding: 16px 20px; margin-bottom: 12px; border-left: 4px solid #e8b4b8;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span style="font-size: 0.75rem; color: #e8b4b8;"><i class="far fa-calendar-alt"></i> ${d.date}</span>
+                        <span style="font-size: 0.7rem; background: rgba(232,180,184,0.2); padding: 4px 12px; border-radius: 30px; color: #8b6b5a;">😊 心情: ${d.mood}/5</span>
+                    </div>
+                    <div style="font-size: 0.9rem; color: #5c4b3a; line-height: 1.5;"> ${d.inspire}</div>
+                    <div style="margin-top: 10px; font-size: 0.65rem; color: #a8c3a5;"><i class="fas fa-book-open"></i> 阅读 ${d.reading}min &nbsp;&nbsp; <i class="fas fa-running"></i> 运动 ${d.exercise}min</div>
+                </div>
+            `).join('');
+        }
+}
+    // 简单的防XSS函数
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // ===================== ECharts 渲染=====================
+    // 1. 支出饼图
+    const expenseChart = echarts.init(document.getElementById('expenseChart'));
+    expenseChart.setOption({
+        tooltip: { trigger: 'item', formatter: '{b}: {d}% ({c}条)', backgroundColor: 'rgba(255,255,255,0.9)', borderColor: '#e8b4b8', borderWidth: 1 },
+        legend: { orient: 'vertical', left: 'left', textStyle: { color: '#5c4b3a' }, itemGap: 12 },
+        series: [{
+            type: 'pie', radius: ['45%', '65%'], center: ['50%', '55%'],
+            data: expenseData.map(d => ({ name: d.name, value: d.value, itemStyle: { color: d.color } })),
+            label: { show: true, formatter: '{b}', fontSize: 11, color: '#5c4b3a' },
+            emphasis: { scale: true, label: { show: true } },
+            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 }
+        }],
+        graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: '支出\n分布', fill: '#bfaaa0', fontSize: 12, fontWeight: 'bold' }, z: 100 }]
+    });
+
+    // 2. 心情折线图
+    const moodChart = echarts.init(document.getElementById('moodChart'));
+    moodChart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { top: 35, left: 50, right: 20, bottom: 20, containLabel: true },
+        xAxis: { type: 'category', data: moodData.map(d => d.date), axisLabel: { fontSize: 11, color: '#8b6b5a' }, axisLine: { lineStyle: { color: '#e0d4cc' } } },
+        yAxis: { type: 'value', name: '心情值', min: 1, max: 5, nameTextStyle: { color: '#8b6b5a' }, splitLine: { lineStyle: { color: '#f0e4dc', type: 'dashed' } } },
+        series: [{
+            type: 'line', data: moodData.map(d => d.mood), smooth: true, name: '平均心情',
+            lineStyle: { width: 2.5, color: '#e8b4b8', shadowBlur: 8, shadowColor: '#e8b4b8' },
+            areaStyle: { color: 'rgba(232, 180, 184, 0.15)' },
+            symbol: 'circle', symbolSize: 8, itemStyle: { color: '#e8b4b8', borderColor: '#fff', borderWidth: 2 },
+            label: { show: true, position: 'top', formatter: '{c}', fontSize: 10, color: '#a88a7a' }
+        }]
+    });
+
+    // 3. 阅读/运动柱状图
+    const activityChart = echarts.init(document.getElementById('activityChart'));
+    activityChart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { data: ['📖 阅读时长', '🏃 运动时长'], left: 'center', top: 0, itemWidth: 20, itemHeight: 12, textStyle: { color: '#5c4b3a' } },
+        grid: { top: 50, left: 50, right: 20, bottom: 20 },
+        xAxis: { type: 'category', data: activityData.map(d => d.month), axisLabel: { rotate: 0, fontSize: 10 }, axisLine: { lineStyle: { color: '#e0d4cc' } } },
+        yAxis: { type: 'value', name: '分钟', nameTextStyle: { color: '#8b6b5a' }, splitLine: { lineStyle: { color: '#f0e4dc' } } },
+        series: [
+            { type: 'bar', data: activityData.map(d => d.reading), name: '📖 阅读时长', barWidth: '30%', itemStyle: { color: '#b8d4e3', borderRadius: [8,8,0,0] }, label: { show: true, position: 'top', fontSize: 9 } },
+            { type: 'bar', data: activityData.map(d => d.exercise), name: '🏃 运动时长', barWidth: '30%', itemStyle: { color: '#c7d9c5', borderRadius: [8,8,0,0] }, label: { show: true, position: 'top', fontSize: 9 } }
+        ]
+    });
+
+    // 4. 灵感内容趋势折线图（显示每日灵感记录数量）
+let inspirationChartData = [];
+let inspirationDates = [];
+
+if (hasUserData && userDiaryData.length > 0) {
+    // 使用用户录入数据，按日期统计灵感内容条数
+    const dailyInspiration = {};
+    userDiaryData.forEach(d => {
+        const date = d.date;
+        if (!dailyInspiration[date]) {
+            dailyInspiration[date] = 0;
+        }
+        // 如果有灵感内容，计数+1
+        if (d.inspire && d.inspire.trim().length > 0) {
+            dailyInspiration[date] += 1;
+        }
+    });
+
+    // 转换为数组并排序
+    const sortedDates = Object.keys(dailyInspiration).sort();
+    inspirationDates = sortedDates.slice(-30); // 最近30天
+    inspirationChartData = inspirationDates.map(date => dailyInspiration[date]);
+
+} else {
+    // 使用模拟数据（显示最近30天的灵感趋势）
+    inspirationDates = [];
+    inspirationChartData = [];
+    for (let i = 29; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        inspirationDates.push(`${d.getMonth()+1}/${d.getDate()}`);
+        inspirationChartData.push(Math.floor(15 + Math.random() * 40));
+    }
+}
+
+const inspirationChart = echarts.init(document.getElementById('inspirationChart'));
+inspirationChart.setOption({
+    tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        formatter: function(params) {
+            return `${params[0].axisValue}<br/>灵感记录: ${params[0].value} 条`;
+        }
+    },
+    grid: { top: 40, left: 55, right: 20, bottom: 50 },
+    xAxis: {
+        type: 'category',
+        data: inspirationDates,
+        name: '日期',
+        axisLabel: { rotate: 45, interval: 4, fontSize: 10 },
+        axisLine: { lineStyle: { color: '#e0d4cc' } }
+    },
+    yAxis: {
+        type: 'value',
+        name: '灵感记录数',
+        nameTextStyle: { color: '#8b6b5a', fontSize: 11 },
+        min: 0,
+        axisLabel: { fontSize: 10 },
+        splitLine: { lineStyle: { color: '#f0e4dc', type: 'dashed' } }
+    },
+    series: [{
+        type: 'line',
+        data: inspirationChartData,
+        name: '灵感记录',
+        smooth: true,
+        lineStyle: { width: 2.5, color: '#e8b4b8', shadowBlur: 8, shadowColor: '#e8b4b8' },
+        areaStyle: { color: 'rgba(232, 180, 184, 0.15)' },
+        symbol: 'circle',
+        symbolSize: 6,
+        itemStyle: { color: '#e8b4b8', borderColor: '#fff', borderWidth: 1.5 },
+        label: {
+            show: true,
+            position: 'top',
+            formatter: '{c}',
+            fontSize: 9,
+            interval: 5
+        }
+    }]
+});
+
+    // 自适应
+    window.addEventListener('resize', () => {
+        expenseChart.resize(); moodChart.resize(); activityChart.resize(); inspirationChart.resize();
+    });
+
+    // ===================== 交互功能（暂时未实装）=====================
+    document.getElementById('exportBtn').addEventListener('click', () => {
+        alert(' 导出功能预留：可扩展为生成 PDF / PNG 报表');
+    });
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+        alert(' 刷新功能预留：后续接入实时数据 API');
+    });
+    document.getElementById('expandBtn').addEventListener('click', () => {
+        alert('扩展接口已预留：支持接入新模块 / 预测分析 / 导出高级报告');
+    });
+
+    // 启动渲染
+    renderStats();
+    renderInspirationList();
+    console.log('个人数字化日记系统已启动 | 极简温柔风 | ECharts可视化');
+</script>
+</body>
+</html>

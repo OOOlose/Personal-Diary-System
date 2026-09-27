@@ -1,0 +1,14 @@
+[
+  {"week_num": 1, "total_reading": 45.5, "total_exercise": 48.2},
+  {"week_num": 2, "total_reading": 52.3, "total_exercise": 51.5},
+  {"week_num": 3, "total_reading": 48.7, "total_exercise": 49.8},
+  {"week_num": 4, "total_reading": 55.2, "total_exercise": 52.3},
+  {"week_num": 5, "total_reading": 58.6, "total_exercise": 55.7},
+  {"week_num": 6, "total_reading": 62.1, "total_exercise": 58.4},
+  {"week_num": 7, "total_reading": 59.8, "total_exercise": 56.2},
+  {"week_num": 8, "total_reading": 54.3, "total_exercise": 52.8},
+  {"week_num": 9, "total_reading": 51.2, "total_exercise": 49.5},
+  {"week_num": 10, "total_reading": 53.6, "total_exercise": 51.2},
+  {"week_num": 11, "total_reading": 49.5, "total_exercise": 47.8},
+  {"week_num": 12, "total_reading": 47.2, "total_exercise": 45.6}
+]
